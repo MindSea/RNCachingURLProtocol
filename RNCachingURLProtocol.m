@@ -411,6 +411,7 @@ static RNCacheListStore *_bundleCacheListStore = nil;
 
 static NSString *const kDataKey = @"data";
 static NSString *const kResponseKey = @"response";
+static NSString *const kHTTPResponseKey = @"httpResponse";
 static NSString *const kRedirectRequestKey = @"redirectRequest";
 static NSString *const kMimeType = @"mimeType";
 static NSString *const kLastModifiedDateKey = @"lastModifiedDateKey";
@@ -427,7 +428,21 @@ static NSString *const kLastModifiedDateKey = @"lastModifiedDateKey";
     [aCoder encodeObject:[NSDate new] forKey:kLastModifiedDateKey];
     [aCoder encodeObject:[self data] forKey:kDataKey];
     [aCoder encodeObject:[self response].MIMEType forKey:kMimeType];
-    [aCoder encodeObject:[self response] forKey:kResponseKey];
+    
+    if ([[self response] isKindOfClass:[NSHTTPURLResponse class]]) {
+        NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)[self response];
+        
+        NSDictionary *encodedResponse = @{@"url": httpResponse.URL,
+                                          @"statusCode": @(httpResponse.statusCode),
+                                          @"HTTPVersion": @"HTTP/1.1",
+                                          @"headerFields": [NSDictionary dictionaryWithDictionary:httpResponse.allHeaderFields]
+                                          };
+        
+        
+        [aCoder encodeObject:encodedResponse forKey:kHTTPResponseKey];
+    } else {
+        [aCoder encodeObject:[self response] forKey:kResponseKey];
+    }
     [aCoder encodeObject:[self redirectRequest] forKey:kRedirectRequestKey];
 }
 
@@ -437,7 +452,18 @@ static NSString *const kLastModifiedDateKey = @"lastModifiedDateKey";
         [self setLastModifiedDate:[aDecoder decodeObjectForKey:kLastModifiedDateKey]];
         [self setData:[aDecoder decodeObjectForKey:kDataKey]];
         [self setMimeType:[aDecoder decodeObjectForKey:kMimeType]];
-        [self setResponse:[aDecoder decodeObjectForKey:kResponseKey]];
+        
+        if ([aDecoder containsValueForKey:kHTTPResponseKey]) {
+            NSDictionary *encodedResponse = [aDecoder decodeObjectForKey:kHTTPResponseKey];
+            NSHTTPURLResponse *response = [[NSHTTPURLResponse alloc] initWithURL:encodedResponse[@"url"]
+                                                                      statusCode:[encodedResponse[@"statusCode"] integerValue]
+                                                                     HTTPVersion:encodedResponse[@"HTTPVersion"]
+                                                                    headerFields:encodedResponse[@"headerFields"]];
+            [self setResponse:response];
+        } else {
+            [self setResponse:[aDecoder decodeObjectForKey:kResponseKey]];
+        }
+        
         [self setRedirectRequest:[aDecoder decodeObjectForKey:kRedirectRequestKey]];
     }
 

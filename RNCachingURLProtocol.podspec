@@ -1,6 +1,7 @@
+# coding: utf-8
 Pod::Spec.new do |s|
   s.name         = "RNCachingURLProtocol"
-  s.version      = "0.0.1"
+  s.version      = "0.0.1-ms2"
   s.summary      = "Simple offline caching for UIWebView and other NSURLConnection clients."
   s.description  = <<-DESC
 	RNCachingURLProtocol is a simple shim for the HTTP protocol (that’s not nearly as scary as it sounds). Anytime a URL is downloaded, the response is cached to disk. Anytime a URL is requested, if we’re online then things proceed normally. If we’re offline, then we retrieve the cached version.
